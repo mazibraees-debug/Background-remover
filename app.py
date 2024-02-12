@@ -93,13 +93,6 @@ gr.HTML('''
     <a href="https://huggingface.co/briaai/RMBG-1.4" target="_blank">BRIA RMBG-1.4 image matting model</a> as backbone. 
   </p>
 ''')
-title = "Background Removal"
-description = r"""Background removal model developed by <a href='https://BRIA.AI' target='_blank'><b>BRIA.AI</b></a>, trained on a carefully selected dataset and is available as an open-source model for non-commercial use.<br> 
-For test upload your image and wait. Read more at model card <a href='https://huggingface.co/briaai/RMBG-1.4' target='_blank'><b>briaai/RMBG-1.4</b></a>.<br>
-"""
-examples = [['./input.jpg'],]
-# output = ImageSlider(position=0.5,label='Image without background', type="pil", show_download_button=True)
-# demo = gr.Interface(fn=process,inputs="image", outputs=output, examples=examples, title=title, description=description)
 demo = gr.Interface(fn=process,inputs="image", outputs="image", examples=examples, title=title, description=description)
 
 if __name__ == "__main__":
