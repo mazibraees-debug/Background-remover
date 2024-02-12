@@ -93,10 +93,9 @@ gr.HTML('''
     <a href="https://huggingface.co/briaai/RMBG-1.4" target="_blank">BRIA RMBG-1.4 image matting model</a> as backbone. 
   </p>
 ''')
-examples = []
 # output = ImageSlider(position=0.5,label='Image without background', type="pil", show_download_button=True)
 # demo = gr.Interface(fn=process,inputs="image", outputs=output, examples=examples, title=title, description=description)
-demo = gr.Interface(fn=process,inputs="image", outputs="image", examples=examples, title=title, description=description)
+demo = gr.Interface(fn=process,inputs="image", outputs="image")
 
 if __name__ == "__main__":
     demo.launch(share=False)
