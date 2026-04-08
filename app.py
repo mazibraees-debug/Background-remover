@@ -11,7 +11,9 @@ from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from briarmbg import BriaRMBG
 
-# Initialize Flask app
+# Deployment Note: This app is configured as a Hybrid deployment.
+# Backend (PyTorch/GPU processing): https://amirgame197-remove-background.hf.space
+# Frontend: Deployed on Vercel
 app = Flask(__name__)
 CORS(app)
 
