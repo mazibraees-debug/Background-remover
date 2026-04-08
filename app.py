@@ -11,9 +11,6 @@ from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from briarmbg import BriaRMBG
 
-# Deployment Note: This app is configured as a Hybrid deployment.
-# Backend (PyTorch/GPU processing): https://amirgame197-remove-background.hf.space
-# Frontend: Deployed on Vercel
 app = Flask(__name__)
 CORS(app)
 
@@ -89,4 +86,4 @@ def remove_bg():
     return jsonify({'image': f"data:image/png;base64,{img_str}"})
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(host='0.0.0.0', port=7860)
