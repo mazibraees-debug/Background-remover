@@ -1,9 +1,9 @@
-gradio
-gradio_imageslider
+flask
+flask-cors
 torch
 torchvision
 pillow
 numpy
+huggingface_hub
 typing
 gitpython
-huggingface_hub

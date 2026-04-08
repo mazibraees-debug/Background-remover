@@ -1,0 +1,23 @@
+# Virtual Environment
+venv/
+.venv/
+env/
+.env/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE / Editor Settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Project specific
+input.jpg
+model.pth
+*.png
+!templates/*.png
+!static/*.png

@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Background Remover | Premium Edition</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Outfit:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-glow: rgba(59, 130, 246, 0.5);
+            --bg: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text: #f8fafc;
+            --text-dim: #94a3b8;
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            width: 100%;
+            flex-grow: 1;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 4rem;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 800;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            color: var(--text-dim);
+            font-size: 1.2rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* --- Upload Section --- */
+        .upload-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 1.5rem;
+            padding: 3rem;
+            text-align: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-5px);
+            box-shadow: 0 0 30px rgba(59, 130, 246, 0.2);
+        }
+
+        .upload-card.dragging {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: var(--primary);
+            scale: 1.02;
+        }
+
+        .icon-box {
+            width: 80px;
+            height: 80px;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            color: var(--primary);
+            font-size: 2rem;
+        }
+
+        .upload-card p {
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-card span {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        /* --- Result Section --- */
+        .result-section {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+            margin-top: 2rem;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .comparison-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            aspect-ratio: 16/10;
+            border-radius: 1.5rem;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--glass-border);
+        }
+
+        .img-after {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: 
+                linear-gradient(45deg, #1e293b 25%, transparent 25%),
+                linear-gradient(-45deg, #1e293b 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #1e293b 75%),
+                linear-gradient(-45deg, transparent 75%, #1e293b 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            background-color: #0f172a;
+        }
+
+        .img-before {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            clip-path: inset(0 50% 0 0);
+        }
+
+        .slider-handle {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            width: 4px;
+            background: white;
+            cursor: ew-resize;
+            z-index: 10;
+        }
+
+        .slider-handle::after {
+            content: "↔";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            background: white;
+            color: black;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        }
+
+        .controls {
+            display: flex;
+            gap: 1.5rem;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            flex: 1;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px var(--primary-glow);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid var(--glass-border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* --- Loading State --- */
+        .loading-overlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(59, 130, 246, 0.1);
+            border-left-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        footer {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+
+        /* --- Mobile Responsive --- */
+        @media (max-width: 768px) {
+            h1 { font-size: 2.5rem; }
+            .container { padding: 1rem; }
+            .upload-card { padding: 2rem; }
+            .controls { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>AI Background Remover</h1>
+            <p class="subtitle">Experience studio-quality background removal in seconds. Powered by advanced AI matting technology.</p>
+        </header>
+
+        <main>
+            <div id="upload-zone" class="upload-card">
+                <div class="loading-overlay" id="loading">
+                    <div class="spinner"></div>
+                    <p>Removing background...</p>
+                </div>
+                
+                <div class="icon-box">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                </div>
+                <p>Drag and drop your image here</p>
+                <span>or click to browse from device</span>
+                <input type="file" id="file-input" accept="image/*">
+            </div>
+
+            <div id="result-zone" class="result-section">
+                <div class="comparison-container" id="comparison">
+                    <img src="" alt="After" id="img-after" class="img-after">
+                    <img src="" alt="Before" id="img-before" class="img-before">
+                    <div id="slider-handle" class="slider-handle"></div>
+                </div>
+
+                <div class="controls">
+                    <button class="btn btn-secondary" onclick="resetUI()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                        Upload Another
+                    </button>
+                    <a id="download-btn" href="#" download="removed-bg.png" class="btn btn-primary">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        Download Result
+                    </a>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Built with ❤️ using BRIA RMBG-1.4 • High Precision Matting Model</p>
+        </footer>
+    </div>
+
+    <script>
+        const uploadZone = document.getElementById('upload-zone');
+        const fileInput = document.getElementById('file-input');
+        const loading = document.getElementById('loading');
+        const resultZone = document.getElementById('result-zone');
+        const imgBefore = document.getElementById('img-before');
+        const imgAfter = document.getElementById('img-after');
+        const comparison = document.getElementById('comparison');
+        const sliderHandle = document.getElementById('slider-handle');
+        const downloadBtn = document.getElementById('download-btn');
+
+        // --- Upload Handling ---
+        uploadZone.addEventListener('click', () => fileInput.click());
+
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragging');
+        });
+
+        uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragging'));
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragging');
+            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) handleFile(e.target.files[0]);
+        });
+
+        async function handleFile(file) {
+            if (!file.type.startsWith('image/')) return alert('Please upload an image file.');
+
+            // Show loading
+            loading.style.display = 'flex';
+            
+            // Preview before image
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                imgBefore.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+
+            // Send to backend
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                const response = await fetch('/remove-bg', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                
+                if (data.error) throw new Error(data.error);
+
+                imgAfter.src = data.image;
+                downloadBtn.href = data.image;
+                
+                // Show result UI
+                uploadZone.style.display = 'none';
+                resultZone.style.display = 'flex';
+                initSlider();
+            } catch (err) {
+                alert('Error processing image: ' + err.message);
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        function resetUI() {
+            uploadZone.style.display = 'block';
+            resultZone.style.display = 'none';
+            fileInput.value = '';
+            imgBefore.style.clipPath = 'inset(0 50% 0 0)';
+            sliderHandle.style.left = '50%';
+        }
+
+        // --- Slider Logic ---
+        function initSlider() {
+            let active = false;
+            
+            const moveSlider = (x) => {
+                const rect = comparison.getBoundingClientRect();
+                let position = ((x - rect.left) / rect.width) * 100;
+                
+                if (position < 0) position = 0;
+                if (position > 100) position = 100;
+
+                sliderHandle.style.left = `${position}%`;
+                imgBefore.style.clipPath = `inset(0 ${100 - position}% 0 0)`;
+            };
+
+            comparison.addEventListener('mousedown', (e) => { active = true; moveSlider(e.pageX); });
+            window.addEventListener('mouseup', () => { active = false; });
+            window.addEventListener('mousemove', (e) => { if (active) moveSlider(e.pageX); });
+
+            // Touch support
+            comparison.addEventListener('touchstart', (e) => { active = true; moveSlider(e.touches[0].pageX); });
+            window.addEventListener('touchend', () => { active = false; });
+            window.addEventListener('touchmove', (e) => { if (active) moveSlider(e.touches[0].pageX); });
+        }
+    </script>
+</body>
+</html>
