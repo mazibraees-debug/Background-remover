@@ -1,13 +1,10 @@
 ---
-title: Remove background
-emoji: 💻
-colorFrom: red
-colorTo: red
-sdk: gradio
-sdk_version: 4.38.1
-app_file: app.py
-pinned: false
-license: other
+title: Background Emover
+emoji: 🌖
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_port: 7860
 ---
 
 Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
