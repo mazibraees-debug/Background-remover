@@ -10,6 +10,7 @@ WORKDIR /code
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
+    build-essential \
     libgl1-mesa-glx \
     libglib2.0-0 \
     git \
@@ -25,5 +26,5 @@ COPY . .
 # Expose the port Hugging Face expects
 EXPOSE 7860
 
-# Run the application
-CMD ["python", "app.py"]
+# Run the application using gunicorn
+CMD ["gunicorn", "-b", "0.0.0.0:7860", "app:app", "--timeout", "120"]
