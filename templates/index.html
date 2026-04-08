@@ -396,6 +396,23 @@
                     method: 'POST',
                     body: formData
                 });
+
+                // Check if response is OK before parsing
+                if (!response.ok) {
+                    const text = await response.text();
+                    throw new Error(`Server error (${response.status}): ${text.substring(0, 100)}`);
+                }
+
+                // Verify we got JSON back
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    if (text.includes('space is') || text.includes('sleeping') || text.includes('error')) {
+                        throw new Error('Backend server is unavailable. The AI model may be starting up — please try again in 1-2 minutes.');
+                    }
+                    throw new Error('Unexpected response from server. Please try again later.');
+                }
+
                 const data = await response.json();
                 
                 if (data.error) throw new Error(data.error);

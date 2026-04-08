@@ -1,9 +1,6 @@
 flask
 flask-cors
-torch
-torchvision
 pillow
 numpy
 huggingface_hub
-gitpython
 gunicorn
