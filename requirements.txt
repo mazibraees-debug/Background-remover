@@ -5,5 +5,4 @@ torchvision
 pillow
 numpy
 huggingface_hub
-typing
 gitpython
