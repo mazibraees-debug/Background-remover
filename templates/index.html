@@ -526,6 +526,10 @@
         const sliderHandle = document.getElementById('slider-handle');
         const downloadBtn = document.getElementById('download-btn');
 
+        const API_URL = window.location.hostname.includes('vercel.app') 
+            ? 'https://muhammad-azib-92-background-emover.hf.space/remove-bg' 
+            : '/remove-bg';
+
         let batchResults = [];
         let isBatchCancelled = false;
 
@@ -673,7 +677,7 @@
             const formData = new FormData();
             formData.append('image', file);
 
-            const response = await fetch('/remove-bg', {
+            const response = await fetch(API_URL, {
                 method: 'POST',
                 body: formData
             });
@@ -700,16 +704,27 @@
         async function downloadAllZip() {
             if (batchResults.length === 0) return;
             
+            console.log("Generating ZIP for", batchResults.length, "images...");
             const zip = new JSZip();
-            batchResults.forEach(item => {
-                zip.file(item.name, item.data, { base64: true });
-            });
+            
+            try {
+                batchResults.forEach(item => {
+                    zip.file(item.name, item.data, { base64: true });
+                });
 
-            const content = await zip.generateAsync({ type: "blob" });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(content);
-            link.download = "removed_backgrounds.zip";
-            link.click();
+                const content = await zip.generateAsync({ type: "blob" });
+                console.log("ZIP blob generated, size:", content.size);
+                
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(content);
+                link.download = "removed_backgrounds.zip";
+                document.body.appendChild(link); // Ensure it's in the document
+                link.click();
+                document.body.removeChild(link);
+            } catch (err) {
+                console.error("ZIP Generation Error:", err);
+                alert("Failed to generate ZIP: " + err.message);
+            }
         }
 
         function resetUI() {
