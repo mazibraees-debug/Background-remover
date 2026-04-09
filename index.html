@@ -11,12 +11,12 @@
     <style>
         :root {
             --primary: #3b82f6;
-            --primary-glow: rgba(59, 130, 246, 0.5);
+            --primary-glow: rgba(59, 130, 246, 0.3);
             --bg: #0f172a;
-            --card-bg: rgba(30, 41, 59, 0.7);
-            --text: #f8fafc;
+            --card-bg: #1e293b;
+            --text: #ffffff;
             --text-dim: #94a3b8;
-            --glass-border: rgba(255, 255, 255, 0.1);
+            --border: #334155;
         }
 
         * {
@@ -28,14 +28,12 @@
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--bg);
-            background-image: 
-                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
             color: var(--text);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             overflow-x: hidden;
+            line-height: 1.5;
         }
 
         .container {
@@ -54,31 +52,11 @@
 
         h1 {
             font-family: 'Outfit', sans-serif;
-            font-size: 3.5rem;
-            font-weight: 800;
-            background: linear-gradient(to right, #60a5fa, #a78bfa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            font-size: 3rem;
+            font-weight: 700;
+            color: #ffffff;
             margin-bottom: 1rem;
-            letter-spacing: -0.02em;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 1rem;
-        }
-
-        .batch-badge {
-            background: rgba(59, 130, 246, 0.1);
-            color: var(--primary);
-            font-size: 0.8rem;
-            padding: 4px 12px;
-            border-radius: 20px;
-            border: 1px solid var(--primary);
-            font-family: 'Inter', sans-serif;
-            -webkit-text-fill-color: var(--primary);
-            font-weight: 600;
-            vertical-align: middle;
-            letter-spacing: normal;
+            letter-spacing: -0.01em;
         }
 
         .subtitle {
@@ -91,24 +69,20 @@
         /* --- Upload Section --- */
         .upload-card {
             background: var(--card-bg);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--glass-border);
-            border-radius: 1.5rem;
-            padding: 3rem;
+            border: 2px dashed var(--border);
+            border-radius: 1rem;
+            padding: 4rem 2rem;
             text-align: center;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.2s ease;
             cursor: pointer;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            max-width: 800px;
+            max-width: 600px;
             margin: 0 auto;
             position: relative;
-            overflow: hidden;
         }
 
         .upload-card:hover {
             border-color: var(--primary);
-            transform: translateY(-5px);
-            box-shadow: 0 0 30px rgba(59, 130, 246, 0.2);
+            background: #1e293b;
         }
 
         .upload-card.dragging {
@@ -440,8 +414,8 @@
 <body>
     <div class="container">
         <header>
-            <h1>AI Background Remover <span class="batch-badge">Batch Support</span></h1>
-            <p class="subtitle">Experience studio-quality background removal in seconds. Powered by advanced AI matting technology.</p>
+            <h1>Background Remover</h1>
+            <p class="subtitle">Studio-quality background removal in seconds.</p>
         </header>
 
         <main>
@@ -503,8 +477,8 @@
             </div>
         </main>
 
-        <footer>
-            <p>Built with ❤️ using BRIA RMBG-1.4 • High Precision Matting Model</p>
+        <footer style="margin-top: auto;">
+            <p>&copy; 2026 AI Photo Studio</p>
         </footer>
     </div>
 
