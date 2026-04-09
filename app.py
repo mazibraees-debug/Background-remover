@@ -44,7 +44,8 @@ def process_image(image_pil):
         im_tensor = im_tensor.cuda()
 
     # inference
-    result = net(im_tensor)
+    with torch.inference_mode():
+        result = net(im_tensor)
     
     # post process
     result = torch.squeeze(F.interpolate(result[0][0], size=(h, w), mode='bilinear'), 0)

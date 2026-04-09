@@ -9,15 +9,18 @@ ENV PYTHONUNBUFFERED 1
 WORKDIR /code
 
 # Install system dependencies
+# Note: libgl1-mesa-glx is replaced by libgl1 in newer Debian versions (like Trixie)
 RUN apt-get update && apt-get install -y \
     build-essential \
-    libgl1-mesa-glx \
+    libgl1 \
     libglib2.0-0 \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Install PyTorch CPU-only (uses --index-url to ensure only CPU version is downloaded)
-RUN pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
+# Upgrade pip and install torch/torchvision separately with higher timeout
+RUN pip install --no-cache-dir --upgrade pip
+RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+RUN pip install --no-cache-dir torchvision --index-url https://download.pytorch.org/whl/cpu
 
 # Copy requirements and install remaining dependencies
 COPY requirements.txt .
@@ -30,4 +33,4 @@ COPY . .
 EXPOSE 7860
 
 # Run the application using gunicorn
-CMD ["gunicorn", "-b", "0.0.0.0:7860", "app:app", "--timeout", "120"]
+CMD ["gunicorn", "-b", "0.0.0.0:7860", "app:app", "--workers", "4", "--timeout", "120"]

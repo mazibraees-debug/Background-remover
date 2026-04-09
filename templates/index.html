@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Outfit:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         :root {
             --primary: #3b82f6;
@@ -60,6 +61,24 @@
             -webkit-text-fill-color: transparent;
             margin-bottom: 1rem;
             letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .batch-badge {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--primary);
+            font-size: 0.8rem;
+            padding: 4px 12px;
+            border-radius: 20px;
+            border: 1px solid var(--primary);
+            font-family: 'Inter', sans-serif;
+            -webkit-text-fill-color: var(--primary);
+            font-weight: 600;
+            vertical-align: middle;
+            letter-spacing: normal;
         }
 
         .subtitle {
@@ -240,6 +259,128 @@
             background: rgba(255, 255, 255, 0.15);
         }
 
+        /* --- Batch UI --- */
+        .batch-section {
+            display: none;
+            flex-direction: column;
+            gap: 2rem;
+            width: 100%;
+            margin-top: 2rem;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .batch-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--card-bg);
+            padding: 1.5rem 2rem;
+            border-radius: 1rem;
+            border: 1px solid var(--glass-border);
+        }
+
+        .progress-container {
+            flex-grow: 1;
+            margin: 0 2rem;
+            background: rgba(255, 255, 255, 0.05);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(to right, var(--primary), #a78bfa);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .batch-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1.5rem;
+            width: 100%;
+        }
+
+        .batch-item {
+            background: var(--card-bg);
+            border-radius: 1rem;
+            border: 1px solid var(--glass-border);
+            overflow: hidden;
+            position: relative;
+            aspect-ratio: 1;
+            transition: transform 0.2s;
+        }
+
+        .batch-item:hover {
+            transform: scale(1.03);
+            border-color: var(--primary);
+        }
+
+        .batch-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .batch-item .status-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.8rem;
+            backdrop-filter: blur(2px);
+            z-index: 5;
+        }
+
+        .batch-item .item-actions {
+            position: absolute;
+            bottom: 0px;
+            left: 0;
+            right: 0;
+            padding: 8px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            display: flex;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 10;
+        }
+
+        .batch-item:hover .item-actions {
+            opacity: 1;
+        }
+
+        .mini-btn {
+            background: var(--primary);
+            border: none;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .mini-btn:hover {
+            background: #2563eb;
+        }
+
+        .batch-controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
         /* --- Loading State --- */
         .loading-overlay {
             display: none;
@@ -299,7 +440,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>AI Background Remover</h1>
+            <h1>AI Background Remover <span class="batch-badge">Batch Support</span></h1>
             <p class="subtitle">Experience studio-quality background removal in seconds. Powered by advanced AI matting technology.</p>
         </header>
 
@@ -313,9 +454,33 @@
                 <div class="icon-box">
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
                 </div>
-                <p>Drag and drop your image here</p>
-                <span>or click to browse from device</span>
-                <input type="file" id="file-input" accept="image/*">
+                <p>Drag and drop images here</p>
+                <span>or click to browse (supports multiple files 10-30)</span>
+                <input type="file" id="file-input" accept="image/*" multiple>
+            </div>
+
+            <div id="batch-zone" class="batch-section">
+                <div class="batch-header">
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem; flex-grow: 1;">
+                        <div id="batch-info" style="font-weight: 600;">Processing: 0 / 0</div>
+                        <div class="progress-container">
+                            <div id="batch-progress" class="progress-bar"></div>
+                        </div>
+                    </div>
+                    <button id="cancel-batch-btn" class="btn btn-secondary" style="padding: 0.5rem 1rem; flex: 0; min-width: 100px;" onclick="cancelBatch()">Cancel</button>
+                </div>
+
+                <div id="batch-grid" class="batch-grid">
+                    <!-- Items will be injected here -->
+                </div>
+
+                <div class="batch-controls">
+                    <button class="btn btn-secondary" style="max-width: 300px;" onclick="resetUI()">Upload More</button>
+                    <button id="download-all-btn" class="btn btn-primary" style="max-width: 300px;" disabled onclick="downloadAllZip()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        Download All (ZIP)
+                    </button>
+                </div>
             </div>
 
             <div id="result-zone" class="result-section">
@@ -348,11 +513,21 @@
         const fileInput = document.getElementById('file-input');
         const loading = document.getElementById('loading');
         const resultZone = document.getElementById('result-zone');
+        const batchZone = document.getElementById('batch-zone');
+        const batchGrid = document.getElementById('batch-grid');
+        const batchProgress = document.getElementById('batch-progress');
+        const batchInfo = document.getElementById('batch-info');
+        const downloadAllBtn = document.getElementById('download-all-btn');
+        const cancelBatchBtn = document.getElementById('cancel-batch-btn');
+
         const imgBefore = document.getElementById('img-before');
         const imgAfter = document.getElementById('img-after');
         const comparison = document.getElementById('comparison');
         const sliderHandle = document.getElementById('slider-handle');
         const downloadBtn = document.getElementById('download-btn');
+
+        let batchResults = [];
+        let isBatchCancelled = false;
 
         // --- Upload Handling ---
         uploadZone.addEventListener('click', () => fileInput.click());
@@ -367,74 +542,184 @@
         uploadZone.addEventListener('drop', (e) => {
             e.preventDefault();
             uploadZone.classList.remove('dragging');
-            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+            if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
         });
 
         fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length) handleFile(e.target.files[0]);
+            if (e.target.files.length) handleFiles(e.target.files);
         });
 
-        async function handleFile(file) {
-            if (!file.type.startsWith('image/')) return alert('Please upload an image file.');
+        async function handleFiles(files) {
+            if (files.length === 0) return;
 
-            // Show loading
-            loading.style.display = 'flex';
-            
-            // Preview before image
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                imgBefore.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
+            if (files.length === 1) {
+                // Single File Mode
+                const file = files[0];
+                if (!file.type.startsWith('image/')) return alert('Please upload an image file.');
+                
+                loading.style.display = 'flex';
+                
+                const reader = new FileReader();
+                reader.onload = (e) => { imgBefore.src = e.target.result; };
+                reader.readAsDataURL(file);
 
-            // Send to backend (Hugging Face Space)
+                try {
+                    const result = await processSingleFile(file);
+                    imgAfter.src = result.image;
+                    downloadBtn.href = result.image;
+                    uploadZone.style.display = 'none';
+                    resultZone.style.display = 'flex';
+                    initSlider();
+                } catch (err) {
+                    alert('Error: ' + err.message);
+                } finally {
+                    loading.style.display = 'none';
+                }
+            } else {
+                // Batch Mode
+                const maxFiles = 50;
+                if (files.length > maxFiles) return alert(`Maximum ${maxFiles} images allowed at once.`);
+                
+                uploadZone.style.display = 'none';
+                const batchSection = document.getElementById('batch-zone');
+                batchSection.style.display = 'flex';
+                batchGrid.innerHTML = '';
+                batchResults = [];
+                downloadAllBtn.disabled = true;
+                cancelBatchBtn.disabled = false;
+                isBatchCancelled = false;
+
+                const fileList = Array.from(files).filter(f => f.type.startsWith('image/'));
+                const total = fileList.length;
+                let completed = 0;
+
+                // Create all placeholders first
+                fileList.forEach((file, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'batch-item';
+                    item.id = `batch-item-${index}`;
+                    item.innerHTML = `
+                        <img src="${URL.createObjectURL(file)}" alt="Source">
+                        <div class="status-overlay" id="status-${index}">Queued...</div>
+                        <div class="item-actions" id="actions-${index}" style="display: none;">
+                            <a href="#" download="removed_${file.name}" class="mini-btn" id="dl-${index}">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                Save
+                            </a>
+                        </div>
+                    `;
+                    batchGrid.appendChild(item);
+                });
+
+                // Helper for concurrency
+                const CONCURRENCY = 4;
+                let index = 0;
+
+                async function worker() {
+                    while (index < total && !isBatchCancelled) {
+                        const currentIndex = index++;
+                        const file = fileList[currentIndex];
+                        const statusOverlay = document.getElementById(`status-${currentIndex}`);
+                        
+                        statusOverlay.innerText = 'Processing...';
+
+                        try {
+                            const result = await processSingleFile(file);
+                            
+                            // Update UI
+                            statusOverlay.style.display = 'none';
+                            const item = document.getElementById(`batch-item-${currentIndex}`);
+                            const img = item.querySelector('img');
+                            img.src = result.image;
+                            
+                            const actions = document.getElementById(`actions-${currentIndex}`);
+                            actions.style.display = 'flex';
+                            const dlBtn = document.getElementById(`dl-${currentIndex}`);
+                            dlBtn.href = result.image;
+
+                            batchResults.push({ 
+                                name: `removed_bg_${file.name.split('.')[0]}.png`, 
+                                data: result.image.split(',')[1] 
+                            });
+                        } catch (err) {
+                            statusOverlay.innerText = 'Error';
+                            statusOverlay.style.backgroundColor = 'rgba(239, 68, 68, 0.6)';
+                            console.error(`Error processing file ${currentIndex}:`, err);
+                        }
+
+                        completed++;
+                        batchInfo.innerText = `Processing: ${completed} / ${total}`;
+                        batchProgress.style.width = `${(completed / total) * 100}%`;
+                    }
+                }
+
+                // Start workers
+                const workers = Array(Math.min(CONCURRENCY, total)).fill(null).map(() => worker());
+                await Promise.all(workers);
+
+                batchInfo.innerText = isBatchCancelled ? `Stopped: ${completed} Images` : `Completed: ${completed} Images`;
+                downloadAllBtn.disabled = batchResults.length === 0;
+                cancelBatchBtn.disabled = true;
+            }
+        }
+
+        function cancelBatch() {
+            isBatchCancelled = true;
+            batchInfo.innerText = "Cancelling...";
+            cancelBatchBtn.disabled = true;
+        }
+
+        async function processSingleFile(file) {
             const formData = new FormData();
             formData.append('image', file);
 
-            try {
-                const response = await fetch('https://muhammad-azib-92-background-emover.hf.space/remove-bg', {
-                    method: 'POST',
-                    body: formData
-                });
+            const response = await fetch('/remove-bg', {
+                method: 'POST',
+                body: formData
+            });
 
-                // Check if response is OK before parsing
-                if (!response.ok) {
-                    const text = await response.text();
-                    throw new Error(`Server error (${response.status}): ${text.substring(0, 100)}`);
-                }
-
-                // Verify we got JSON back
-                const contentType = response.headers.get('content-type');
-                if (!contentType || !contentType.includes('application/json')) {
-                    const text = await response.text();
-                    if (text.includes('space is') || text.includes('sleeping') || text.includes('error')) {
-                        throw new Error('Backend server is unavailable. The AI model may be starting up — please try again in 1-2 minutes.');
-                    }
-                    throw new Error('Unexpected response from server. Please try again later.');
-                }
-
-                const data = await response.json();
-                
-                if (data.error) throw new Error(data.error);
-
-                imgAfter.src = data.image;
-                downloadBtn.href = data.image;
-                
-                // Show result UI
-                uploadZone.style.display = 'none';
-                resultZone.style.display = 'flex';
-                initSlider();
-            } catch (err) {
-                alert('Error processing image: ' + err.message);
-            } finally {
-                loading.style.display = 'none';
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(`Server error (${response.status}): ${text.substring(0, 100)}`);
             }
+
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                const text = await response.text();
+                if (text.includes('space is') || text.includes('sleeping') || text.includes('error')) {
+                    throw new Error('Backend server is unavailable. Please try again in 1-2 minutes.');
+                }
+                throw new Error('Unexpected response from server.');
+            }
+
+            const data = await response.json();
+            if (data.error) throw new Error(data.error);
+            return data;
+        }
+
+        async function downloadAllZip() {
+            if (batchResults.length === 0) return;
+            
+            const zip = new JSZip();
+            batchResults.forEach(item => {
+                zip.file(item.name, item.data, { base64: true });
+            });
+
+            const content = await zip.generateAsync({ type: "blob" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(content);
+            link.download = "removed_backgrounds.zip";
+            link.click();
         }
 
         function resetUI() {
             uploadZone.style.display = 'block';
             resultZone.style.display = 'none';
+            batchZone.style.display = 'none';
             fileInput.value = '';
+            batchResults = [];
+            isBatchCancelled = false;
+            cancelBatchBtn.disabled = false;
             imgBefore.style.clipPath = 'inset(0 50% 0 0)';
             sliderHandle.style.left = '50%';
         }

@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Outfit:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         :root {
             --primary: #3b82f6;
@@ -240,6 +241,91 @@
             background: rgba(255, 255, 255, 0.15);
         }
 
+        /* --- Batch UI --- */
+        .batch-section {
+            display: none;
+            flex-direction: column;
+            gap: 2rem;
+            width: 100%;
+            margin-top: 2rem;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .batch-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--card-bg);
+            padding: 1.5rem 2rem;
+            border-radius: 1rem;
+            border: 1px solid var(--glass-border);
+        }
+
+        .progress-container {
+            flex-grow: 1;
+            margin: 0 2rem;
+            background: rgba(255, 255, 255, 0.05);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(to right, var(--primary), #a78bfa);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .batch-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1.5rem;
+            width: 100%;
+        }
+
+        .batch-item {
+            background: var(--card-bg);
+            border-radius: 1rem;
+            border: 1px solid var(--glass-border);
+            overflow: hidden;
+            position: relative;
+            aspect-ratio: 1;
+            transition: transform 0.2s;
+        }
+
+        .batch-item:hover {
+            transform: scale(1.03);
+            border-color: var(--primary);
+        }
+
+        .batch-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .batch-item .status-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.8rem;
+            backdrop-filter: blur(2px);
+        }
+
+        .batch-controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
         /* --- Loading State --- */
         .loading-overlay {
             display: none;
@@ -313,9 +399,30 @@
                 <div class="icon-box">
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
                 </div>
-                <p>Drag and drop your image here</p>
-                <span>or click to browse from device</span>
-                <input type="file" id="file-input" accept="image/*">
+                <p>Drag and drop images here</p>
+                <span>or click to browse (supports multiple files 10-30)</span>
+                <input type="file" id="file-input" accept="image/*" multiple>
+            </div>
+
+            <div id="batch-zone" class="batch-section">
+                <div class="batch-header">
+                    <div id="batch-info" style="font-weight: 600;">Processing: 0 / 0</div>
+                    <div class="progress-container">
+                        <div id="batch-progress" class="progress-bar"></div>
+                    </div>
+                </div>
+
+                <div id="batch-grid" class="batch-grid">
+                    <!-- Items will be injected here -->
+                </div>
+
+                <div class="batch-controls">
+                    <button class="btn btn-secondary" style="max-width: 300px;" onclick="resetUI()">Upload More</button>
+                    <button id="download-all-btn" class="btn btn-primary" style="max-width: 300px;" disabled onclick="downloadAllZip()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        Download All (ZIP)
+                    </button>
+                </div>
             </div>
 
             <div id="result-zone" class="result-section">
@@ -344,15 +451,20 @@
     </div>
 
     <script>
-        const uploadZone = document.getElementById('upload-zone');
-        const fileInput = document.getElementById('file-input');
-        const loading = document.getElementById('loading');
         const resultZone = document.getElementById('result-zone');
+        const batchZone = document.getElementById('batch-zone');
+        const batchGrid = document.getElementById('batch-grid');
+        const batchProgress = document.getElementById('batch-progress');
+        const batchInfo = document.getElementById('batch-info');
+        const downloadAllBtn = document.getElementById('download-all-btn');
+
         const imgBefore = document.getElementById('img-before');
         const imgAfter = document.getElementById('img-after');
         const comparison = document.getElementById('comparison');
         const sliderHandle = document.getElementById('slider-handle');
         const downloadBtn = document.getElementById('download-btn');
+
+        let batchResults = [];
 
         // --- Upload Handling ---
         uploadZone.addEventListener('click', () => fileInput.click());
@@ -367,74 +479,141 @@
         uploadZone.addEventListener('drop', (e) => {
             e.preventDefault();
             uploadZone.classList.remove('dragging');
-            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+            if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
         });
 
         fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length) handleFile(e.target.files[0]);
+            if (e.target.files.length) handleFiles(e.target.files);
         });
 
-        async function handleFile(file) {
-            if (!file.type.startsWith('image/')) return alert('Please upload an image file.');
+        async function handleFiles(files) {
+            if (files.length === 0) return;
 
-            // Show loading
-            loading.style.display = 'flex';
-            
-            // Preview before image
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                imgBefore.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
+            if (files.length === 1) {
+                // Single File Mode
+                const file = files[0];
+                if (!file.type.startsWith('image/')) return alert('Please upload an image file.');
+                
+                loading.style.display = 'flex';
+                
+                const reader = new FileReader();
+                reader.onload = (e) => { imgBefore.src = e.target.result; };
+                reader.readAsDataURL(file);
 
-            // Send to backend (Hugging Face Space)
+                try {
+                    const result = await processSingleFile(file);
+                    imgAfter.src = result.image;
+                    downloadBtn.href = result.image;
+                    uploadZone.style.display = 'none';
+                    resultZone.style.display = 'flex';
+                    initSlider();
+                } catch (err) {
+                    alert('Error: ' + err.message);
+                } finally {
+                    loading.style.display = 'none';
+                }
+            } else {
+                // Batch Mode
+                if (files.length > 50) return alert('Maximum 50 images allowed at once.');
+                
+                uploadZone.style.display = 'none';
+                batchZone.style.display = 'flex';
+                batchGrid.innerHTML = '';
+                batchResults = [];
+                downloadAllBtn.disabled = true;
+
+                const fileList = Array.from(files).filter(f => f.type.startsWith('image/'));
+                const total = fileList.length;
+
+                for (let i = 0; i < total; i++) {
+                    const file = fileList[i];
+                    
+                    // Add placeholder to grid
+                    const item = document.createElement('div');
+                    item.className = 'batch-item';
+                    item.innerHTML = `
+                        <img src="${URL.createObjectURL(file)}" alt="Source">
+                        <div class="status-overlay" id="status-${i}">Processing...</div>
+                    `;
+                    batchGrid.appendChild(item);
+
+                    // Update Progress
+                    batchInfo.innerText = `Processing: ${i + 1} / ${total}`;
+                    batchProgress.style.width = `${((i) / total) * 100}%`;
+
+                    try {
+                        const result = await processSingleFile(file);
+                        const statusOverlay = document.getElementById(`status-${i}`);
+                        statusOverlay.style.display = 'none';
+                        
+                        // Replace img with processed result
+                        const img = item.querySelector('img');
+                        img.src = result.image;
+                        
+                        batchResults.push({ name: `removed_bg_${file.name.split('.')[0]}.png`, data: result.image.split(',')[1] });
+                    } catch (err) {
+                        const statusOverlay = document.getElementById(`status-${i}`);
+                        statusOverlay.innerText = 'Error';
+                        statusOverlay.style.backgroundColor = 'rgba(239, 68, 68, 0.6)';
+                    }
+                    
+                    batchProgress.style.width = `${((i + 1) / total) * 100}%`;
+                }
+
+                batchInfo.innerText = `Completed: ${total} Images`;
+                downloadAllBtn.disabled = false;
+            }
+        }
+
+        async function processSingleFile(file) {
             const formData = new FormData();
             formData.append('image', file);
 
-            try {
-                const response = await fetch('https://muhammad-azib-92-background-emover.hf.space/remove-bg', {
-                    method: 'POST',
-                    body: formData
-                });
+            const response = await fetch('https://muhammad-azib-92-background-emover.hf.space/remove-bg', {
+                method: 'POST',
+                body: formData
+            });
 
-                // Check if response is OK before parsing
-                if (!response.ok) {
-                    const text = await response.text();
-                    throw new Error(`Server error (${response.status}): ${text.substring(0, 100)}`);
-                }
-
-                // Verify we got JSON back
-                const contentType = response.headers.get('content-type');
-                if (!contentType || !contentType.includes('application/json')) {
-                    const text = await response.text();
-                    if (text.includes('space is') || text.includes('sleeping') || text.includes('error')) {
-                        throw new Error('Backend server is unavailable. The AI model may be starting up — please try again in 1-2 minutes.');
-                    }
-                    throw new Error('Unexpected response from server. Please try again later.');
-                }
-
-                const data = await response.json();
-                
-                if (data.error) throw new Error(data.error);
-
-                imgAfter.src = data.image;
-                downloadBtn.href = data.image;
-                
-                // Show result UI
-                uploadZone.style.display = 'none';
-                resultZone.style.display = 'flex';
-                initSlider();
-            } catch (err) {
-                alert('Error processing image: ' + err.message);
-            } finally {
-                loading.style.display = 'none';
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(`Server error (${response.status}): ${text.substring(0, 100)}`);
             }
+
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                const text = await response.text();
+                if (text.includes('space is') || text.includes('sleeping') || text.includes('error')) {
+                    throw new Error('Backend server is unavailable. Please try again in 1-2 minutes.');
+                }
+                throw new Error('Unexpected response from server.');
+            }
+
+            const data = await response.json();
+            if (data.error) throw new Error(data.error);
+            return data;
+        }
+
+        async function downloadAllZip() {
+            if (batchResults.length === 0) return;
+            
+            const zip = new JSZip();
+            batchResults.forEach(item => {
+                zip.file(item.name, item.data, { base64: true });
+            });
+
+            const content = await zip.generateAsync({ type: "blob" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(content);
+            link.download = "removed_backgrounds.zip";
+            link.click();
         }
 
         function resetUI() {
             uploadZone.style.display = 'block';
             resultZone.style.display = 'none';
+            batchZone.style.display = 'none';
             fileInput.value = '';
+            batchResults = [];
             imgBefore.style.clipPath = 'inset(0 50% 0 0)';
             sliderHandle.style.left = '50%';
         }
